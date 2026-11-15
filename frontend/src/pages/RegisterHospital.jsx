@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ApiError, apiRequest } from '../api'
+import { useLocale } from '../i18n'
 import '../App.css'
 
 const initialForm = {
@@ -16,8 +17,6 @@ const initialForm = {
   working_hours: '',
   establishment_year: '',
   location_url: '',
-  specialties: '',
-  services: '',
   contact_name: '',
   email: '',
   password: '',
@@ -25,6 +24,7 @@ const initialForm = {
 }
 
 function RegisterHospital() {
+  const { t } = useLocale()
   const [form, setForm] = useState(initialForm)
   const [fieldErrors, setFieldErrors] = useState({})
   const [formError, setFormError] = useState('')
@@ -47,13 +47,9 @@ function RegisterHospital() {
     try {
       const data = new FormData()
       for (const [field, value] of Object.entries(form)) {
-        if (['specialties', 'services'].includes(field)) {
-          data.append(field, JSON.stringify(value.split(',').map((item) => item.trim()).filter(Boolean)))
-        } else {
-          data.append(field, ['name', 'governorate', 'city', 'address', 'phone', 'contact_email', 'short_description', 'overview', 'website_url', 'working_hours', 'establishment_year', 'location_url', 'contact_name', 'email'].includes(field) ? value.trim() : value)
-        }
+        data.append(field, value.trim())
       }
-      if (logoFile) data.append('logo', logoFile)
+      data.append('logo', logoFile)
 
       await apiRequest('/api/hospitals', {
         method: 'POST',
@@ -79,61 +75,56 @@ function RegisterHospital() {
   return (
     <main className="auth-screen">
       <section className="login-card" aria-labelledby="registration-heading">
-        <Link className="login-brand" to="/login" aria-label="DHANA sign in">
+        <Link className="login-brand" to="/login" aria-label={t('DHANA sign in')}>
           <img
             className="login-logo"
             src="/dhana-logo-removebg-preview.png"
-            alt="DHANA (ضنى) neonatal-care logo"
+            alt={t('DHANA neonatal care logo')}
           />
           <span>
             <strong>DHANA</strong>
-            <small>ضنى · Neonatal Care</small>
+            <small>ضنى · {t('Neonatal Care')}</small>
           </span>
         </Link>
 
         {submitted ? (
           <div className="login-intro" role="status">
-            <span className="eyebrow">REGISTRATION RECEIVED</span>
-            <h1 id="registration-heading">Awaiting review</h1>
-            <p>
-              Your hospital request is pending Super Admin review. The account will
-              remain unavailable until the hospital is approved.
-            </p>
-            <Link className="primary-button" to="/login">Return to sign in</Link>
+            <span className="eyebrow">{t('REGISTRATION RECEIVED')}</span>
+            <h1 id="registration-heading">{t('Awaiting review')}</h1>
+            <p>{t('Your hospital request is pending Super Admin review. The account will remain unavailable until the hospital is approved.')}</p>
+            <Link className="primary-button" to="/login">{t('Return to sign in')}</Link>
           </div>
         ) : (
           <>
             <div className="login-intro">
-              <span className="eyebrow">HOSPITAL ACCOUNT</span>
-              <h1 id="registration-heading">Request registration</h1>
-              <p>Submit your hospital and responsible staff details for review.</p>
+              <span className="eyebrow">{t('HOSPITAL ACCOUNT')}</span>
+              <h1 id="registration-heading">{t('Request registration')}</h1>
+              <p>{t('Submit your hospital and responsible staff details for review.')}</p>
             </div>
 
-            {formError && <div className="login-error" role="alert">{formError}</div>}
+            {formError && <div className="login-error" role="alert">{t(formError)}</div>}
 
             <form className="login-form registration-form" onSubmit={handleSubmit}>
               <section className="registration-section" aria-labelledby="registration-hospital-heading">
-                <h2 id="registration-hospital-heading">Hospital profile information</h2>
-                <p>Optional profile details can be completed or updated after approval.</p>
+                <h2 id="registration-hospital-heading">{t('Hospital profile information')}</h2>
+                <p>{t('Complete the required hospital contact and location information. Other profile details can be updated after approval.')}</p>
               </section>
               {[
                 ['name', 'Hospital name', 'text', 'organization', true],
-                ['governorate', 'Governorate (optional)', 'text', 'address-level1', false],
+                ['governorate', 'Governorate', 'text', 'address-level1', true],
                 ['city', 'City', 'text', 'address-level2', true],
-                ['address', 'Street address (optional)', 'text', 'street-address', false],
-                ['phone', 'Hospital contact phone (optional)', 'tel', 'tel', false],
-                ['contact_email', 'Hospital contact email (optional)', 'email', 'email', false],
+                ['address', 'Street address', 'text', 'street-address', true],
+                ['phone', 'Hospital contact phone', 'tel', 'tel', true],
+                ['contact_email', 'Hospital contact email', 'email', 'email', true],
                 ['short_description', 'Short description (optional)', 'text', 'off', false],
                 ['overview', 'Detailed overview (optional)', 'text', 'off', false],
-                ['website_url', 'Website URL (optional)', 'url', 'url', false],
+                ['website_url', 'Website URL (provide this or a Google Maps/location link)', 'url', 'url', false],
                 ['working_hours', 'Working hours (optional)', 'text', 'off', false],
                 ['establishment_year', 'Establishment year (optional)', 'number', 'off', false],
-                ['location_url', 'Google Maps or location URL (optional)', 'url', 'url', false],
-                ['specialties', 'Medical specialties (optional, comma-separated)', 'text', 'off', false],
-                ['services', 'Services (optional, comma-separated)', 'text', 'off', false],
+                ['location_url', 'Google Maps or location URL (provide this or a website URL)', 'url', 'url', false],
               ].map(([field, label, type, autoComplete, required]) => (
                 <label key={field} htmlFor={`register-${field}`}>
-                  {label}
+                  {t(label)}
                   {['short_description', 'overview'].includes(field) ? (
                     <textarea
                       id={`register-${field}`}
@@ -151,7 +142,11 @@ function RegisterHospital() {
                       name={field}
                       type={type}
                       autoComplete={autoComplete}
-                      required={required}
+                      required={
+                        required
+                        || (field === 'website_url' && !form.location_url.trim())
+                        || (field === 'location_url' && !form.website_url.trim())
+                      }
                       maxLength={field === 'phone' ? 32 : field === 'governorate' ? 100 : field === 'address' ? 1000 : field === 'website_url' || field === 'location_url' ? 2048 : 255}
                       min={field === 'establishment_year' ? 1800 : undefined}
                       max={field === 'establishment_year' ? new Date().getFullYear() : undefined}
@@ -163,29 +158,30 @@ function RegisterHospital() {
                   )}
                   {fieldErrors[field] && (
                     <span className="auth-field-error" id={`register-${field}-error`}>
-                      {fieldErrors[field]}
+                      {t(fieldErrors[field])}
                     </span>
                   )}
                 </label>
               ))}
               <label htmlFor="register-logo">
-                Hospital logo/profile image (optional)
+                {t('Hospital logo/profile image')}
                 <input
                   id="register-logo"
                   name="logo"
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
+                  required
                   onChange={(event) => setLogoFile(event.target.files?.[0] || null)}
                   aria-invalid={Boolean(fieldErrors.logo)}
                   aria-describedby={fieldErrors.logo ? 'register-logo-error' : 'register-logo-hint'}
                 />
-                <span id="register-logo-hint" className="profile-field-hint">JPEG, PNG, or WebP; maximum 2 MB.</span>
-                {fieldErrors.logo && <span className="auth-field-error" id="register-logo-error">{fieldErrors.logo}</span>}
+                <span id="register-logo-hint" className="profile-field-hint">{t('Upload a JPEG, PNG, or WebP image up to 2 MB.')}</span>
+                {fieldErrors.logo && <span className="auth-field-error" id="register-logo-error">{t(fieldErrors.logo)}</span>}
               </label>
 
               <section className="registration-section" aria-labelledby="registration-account-heading">
-                <h2 id="registration-account-heading">Account administrator</h2>
-                <p>These details create the private hospital administrator sign-in.</p>
+                <h2 id="registration-account-heading">{t('Account administrator')}</h2>
+                <p>{t('These details create the private hospital administrator sign-in.')}</p>
               </section>
               {[
                 ['contact_name', 'Administrator name', 'text', 'name'],
@@ -194,7 +190,7 @@ function RegisterHospital() {
                 ['password_confirmation', 'Confirm password', 'password', 'new-password'],
               ].map(([field, label, type, autoComplete]) => (
                 <label key={field} htmlFor={`register-${field}`}>
-                  {label}
+                  {t(label)}
                   <input
                     id={`register-${field}`}
                     name={field}
@@ -210,20 +206,20 @@ function RegisterHospital() {
                   />
                   {fieldErrors[field] && (
                     <span className="auth-field-error" id={`register-${field}-error`}>
-                      {fieldErrors[field]}
+                      {t(fieldErrors[field])}
                     </span>
                   )}
                 </label>
               ))}
 
               <button className="login-submit" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting…' : 'Submit for review'}
+                {t(isSubmitting ? 'Submitting…' : 'Submit for review')}
               </button>
             </form>
           </>
         )}
       </section>
-      <p className="login-footer"><Link to="/login">Authorized staff sign in</Link></p>
+      <p className="login-footer"><Link to="/login">{t('Authorized staff sign in')}</Link></p>
     </main>
   )
 }

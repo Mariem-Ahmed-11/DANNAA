@@ -87,7 +87,7 @@ export default function AdminShell({
   const formatCount = (value) => new Intl.NumberFormat(language === 'ar' ? 'ar-EG' : 'en').format(value)
   const accountImage = isSuperAdmin
     ? '/dhana-logo-removebg-preview.png'
-    : hospitalLogoUrl || '/assets/hospital-building.jpg'
+    : hospitalLogoUrl
 
   useEffect(() => {
     if (isSuperAdmin) return undefined
@@ -100,11 +100,10 @@ export default function AdminShell({
   }, [isSuperAdmin])
 
   function handleAccountImageError(event) {
-    const fallbackImage = isSuperAdmin
-      ? '/dhana-logo-removebg-preview.png'
-      : '/assets/hospital-building.jpg'
-    if (!event.currentTarget.src.endsWith(fallbackImage)) {
-      event.currentTarget.src = fallbackImage
+    if (isSuperAdmin && !event.currentTarget.src.endsWith('/dhana-logo-removebg-preview.png')) {
+      event.currentTarget.src = '/dhana-logo-removebg-preview.png'
+    } else {
+      event.currentTarget.hidden = true
     }
   }
 
@@ -507,12 +506,18 @@ export default function AdminShell({
                 }}
                 type="button"
               >
-                <img
-                  alt={t(isSuperAdmin ? 'Super Admin profile' : 'Hospital account')}
-                  className="sa-avatar"
-                  onError={handleAccountImageError}
-                  src={accountImage}
-                />
+                {accountImage ? (
+                  <img
+                    alt={t(isSuperAdmin ? 'Super Admin profile' : 'Hospital account')}
+                    className="sa-avatar"
+                    onError={handleAccountImageError}
+                    src={accountImage}
+                  />
+                ) : (
+                  <span className="sa-avatar sa-avatar-placeholder" aria-hidden="true">
+                    <Icon name="building" size={18} />
+                  </span>
+                )}
                 <span className="sa-profile-copy">
                   <strong>{user?.name || t(isSuperAdmin ? 'Super Admin' : 'Hospital user')}</strong>
                   <small>{t(isSuperAdmin ? 'Super Admin' : 'Hospital')}</small>
@@ -523,7 +528,13 @@ export default function AdminShell({
               {profileOpen && (
                 <div className="sa-popover sa-profile-menu" role="menu">
                   <div className="sa-profile-menu-head">
-                    <img alt="" onError={handleAccountImageError} src={accountImage} />
+                    {accountImage ? (
+                      <img alt="" onError={handleAccountImageError} src={accountImage} />
+                    ) : (
+                      <span className="sa-profile-menu-avatar-placeholder" aria-hidden="true">
+                        <Icon name="building" size={17} />
+                      </span>
+                    )}
                     <span>
                       <strong>{user?.name || t(isSuperAdmin ? 'Super Admin' : 'Hospital user')}</strong>
                       <small>{user?.email}</small>

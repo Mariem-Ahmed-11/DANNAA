@@ -46,10 +46,17 @@ test('hospital management endpoints require authentication', function () {
 });
 
 test('hospital representative can submit a pending registration', function () {
+    Storage::fake('public');
+
     $this->postJson('/api/hospitals', [
         'name' => 'Community Hospital',
+        'governorate' => 'Central Governorate',
         'city' => 'Rivertown',
+        'address' => '15 Care Avenue',
         'phone' => '555-0101',
+        'contact_email' => 'contact@community-hospital.test',
+        'website_url' => 'https://community-hospital.test',
+        'logo' => validPngUpload('community-hospital.png'),
         'contact_name' => 'Hospital Representative',
         'email' => 'representative@example.test',
         'password' => 'strong-hospital-password',
@@ -64,6 +71,7 @@ test('hospital representative can submit a pending registration', function () {
         ->assertJsonMissingPath('data.logo_path');
 
     $hospital = Hospital::query()->with('users')->sole();
+    Storage::disk('public')->assertExists($hospital->logo_path);
     expect($hospital->status)->toBe('pending_review')
         ->and($hospital->users)->toHaveCount(1)
         ->and($hospital->users->first()->role)->toBe('hospital_admin')
@@ -87,13 +95,69 @@ test('hospital registration validates data and does not create partial records',
             'password' => 'short',
         ])
         ->assertUnprocessable()
-        ->assertJsonValidationErrors(['name', 'city', 'contact_name', 'email', 'password']);
+        ->assertJsonValidationErrors([
+            'name',
+            'governorate',
+            'city',
+            'address',
+            'phone',
+            'contact_email',
+            'website_url',
+            'location_url',
+            'logo',
+            'contact_name',
+            'email',
+            'password',
+        ]);
 
     $this->assertDatabaseCount('hospitals', 0);
     $this->assertDatabaseCount('users', 0);
 });
 
-test('hospital registration accepts profile information and an optional validated logo', function () {
+test('hospital registration requires contact details and at least one website or map link', function () {
+    $this->postJson('/api/hospitals', [
+        'name' => 'Required Fields Hospital',
+        'city' => 'Rivertown',
+        'contact_name' => 'Hospital Representative',
+        'email' => 'required-fields@example.test',
+        'password' => 'strong-hospital-password',
+        'password_confirmation' => 'strong-hospital-password',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors([
+            'governorate',
+            'address',
+            'phone',
+            'contact_email',
+            'website_url',
+            'location_url',
+            'logo',
+        ]);
+
+    $this->assertDatabaseCount('hospitals', 0);
+    $this->assertDatabaseCount('users', 0);
+});
+
+test('hospital registration requires a logo when all other required details are valid', function () {
+    $this->postJson('/api/hospitals', [
+        'name' => 'No Logo Hospital',
+        'governorate' => 'Central Governorate',
+        'city' => 'Rivertown',
+        'address' => '15 Care Avenue',
+        'phone' => '555-0155',
+        'contact_email' => 'contact@no-logo-hospital.test',
+        'website_url' => 'https://no-logo-hospital.test',
+        'contact_name' => 'Hospital Representative',
+        'email' => 'no-logo@example.test',
+        'password' => 'strong-hospital-password',
+        'password_confirmation' => 'strong-hospital-password',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['logo']);
+
+    $this->assertDatabaseCount('hospitals', 0);
+    $this->assertDatabaseCount('users', 0);
+});
+
+test('hospital registration accepts profile information and a required validated logo', function () {
     Storage::fake('public');
 
     $response = $this->postJson('/api/hospitals', [

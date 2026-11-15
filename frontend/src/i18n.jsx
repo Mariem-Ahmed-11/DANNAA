@@ -321,6 +321,9 @@ const arabic = {
 const supplementalArabic = {
   'Please correct the highlighted fields.': 'يرجى تصحيح الحقول المحددة.',
   'The registration could not be submitted.': 'تعذر إرسال طلب التسجيل.',
+  'The logo field must be an image.': 'يجب أن يكون ملف الشعار صورة.',
+  'The logo field must be a file of type: jpg, jpeg, png, webp.': 'يجب أن يكون ملف الشعار بإحدى الصيغ التالية: JPG أو JPEG أو PNG أو WebP.',
+  'The logo field must not be greater than 2048 kilobytes.': 'يجب ألا يتجاوز حجم صورة الشعار 2 ميجابايت.',
   'DHANA sign in': 'تسجيل الدخول إلى ضنى',
   'REGISTRATION RECEIVED': 'تم استلام الطلب',
   'Awaiting review': 'بانتظار المراجعة',
@@ -330,20 +333,21 @@ const supplementalArabic = {
   'Request registration': 'طلب تسجيل',
   'Submit your hospital and responsible staff details for review.': 'أرسل تفاصيل المستشفى والمسؤولين عنه للمراجعة.',
   'Hospital profile information': 'معلومات ملف المستشفى',
-  'Optional profile details can be completed or updated after approval.': 'يمكن إكمال تفاصيل الملف الاختيارية أو تحديثها بعد الموافقة.',
-  'Hospital logo/profile image (optional)': 'شعار المستشفى أو صورة الملف (اختياري)',
-  'JPEG, PNG, or WebP; maximum 2 MB.': 'JPEG أو PNG أو WebP، بحجم أقصى 2 ميجابايت.',
+  'Complete the required hospital contact and location information. Other profile details can be updated after approval.': 'أكمل بيانات التواصل والموقع المطلوبة للمستشفى. يمكن تحديث باقي بيانات الملف بعد الموافقة.',
+  'Hospital logo/profile image': 'شعار المستشفى أو صورة الملف',
+  'Upload a JPEG, PNG, or WebP image up to 2 MB.': 'ارفع صورة بصيغة JPEG أو PNG أو WebP، بحد أقصى 2 ميجابايت.',
   'Account administrator': 'مسؤول الحساب',
   'These details create the private hospital administrator sign-in.': 'تنشئ هذه التفاصيل تسجيل دخول خاصاً لمسؤول المستشفى.',
   'Authorized staff sign in': 'تسجيل دخول الموظفين المصرح لهم',
-  'Hospital name': 'اسم المستشفى', 'Governorate (optional)': 'المحافظة (اختياري)', 'City': 'المدينة',
-  'Street address (optional)': 'عنوان الشارع (اختياري)', 'Hospital contact phone (optional)': 'هاتف اتصال المستشفى (اختياري)',
-  'Hospital contact email (optional)': 'بريد اتصال المستشفى (اختياري)', 'Short description (optional)': 'وصف مختصر (اختياري)',
-  'Detailed overview (optional)': 'نظرة تفصيلية (اختياري)', 'Website URL (optional)': 'رابط الموقع الإلكتروني (اختياري)',
+  'DHANA neonatal care logo': 'شعار ضنى لرعاية حديثي الولادة',
+  'Hospital name': 'اسم المستشفى', 'Governorate': 'المحافظة', 'City': 'المدينة',
+  'Street address': 'عنوان الشارع', 'Hospital contact phone': 'هاتف التواصل مع المستشفى',
+  'Hospital contact email': 'بريد التواصل مع المستشفى', 'Short description (optional)': 'وصف مختصر (اختياري)',
+  'Detailed overview (optional)': 'نظرة تفصيلية (اختياري)',
+  'Website URL (provide this or a Google Maps/location link)': 'رابط الموقع الإلكتروني (أدخلي هذا الرابط أو رابط خرائط Google أو الموقع)',
   'Working hours (optional)': 'ساعات العمل (اختياري)', 'Establishment year (optional)': 'سنة التأسيس (اختياري)',
-  'Google Maps or location URL (optional)': 'رابط خرائط Google أو الموقع (اختياري)',
-  'Medical specialties (optional, comma-separated)': 'التخصصات الطبية (اختياري، مفصولة بفواصل)',
-  'Services (optional, comma-separated)': 'الخدمات (اختياري، مفصولة بفواصل)', 'Administrator name': 'اسم المسؤول',
+  'Google Maps or location URL (provide this or a website URL)': 'رابط خرائط Google أو الموقع (أدخلي هذا الرابط أو رابط الموقع الإلكتروني)',
+  'Administrator name': 'اسم المسؤول',
   'Administrator sign-in email': 'بريد دخول المسؤول', 'Password (12 characters minimum)': 'كلمة المرور (12 حرفاً على الأقل)',
   'Hospital workspace / Team': 'مساحة عمل المستشفى / الفريق', 'Hospital staff': 'طاقم المستشفى',
   'Invite and manage staff accounts for your hospital.': 'ادعُ حسابات طاقم مستشفاك وأدرها.',
@@ -1221,8 +1225,11 @@ export function LocaleProvider({ children }) {
         const translation = translations[text] || translateTemplate(text, translations)
         if (translation !== text) {
           template = translation
-        } else if (import.meta.env.DEV && text.trim()) {
-          console.warn(`[i18n] Missing Arabic translation: "${text}"`)
+        } else {
+          template = translateValidationMessage(text, language)
+          if (template === text && import.meta.env.DEV && text.trim()) {
+            console.warn(`[i18n] Missing Arabic translation: "${text}"`)
+          }
         }
       }
       if (!variables) return template

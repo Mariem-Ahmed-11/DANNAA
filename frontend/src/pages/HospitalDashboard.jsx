@@ -123,15 +123,19 @@ export default function HospitalDashboard() {
           <p>{t('Manage your hospital account and submitted data.')}</p>
         </div>
         <div className="hospital-dashboard-identity">
-          <img
-            alt={t('Hospital logo')}
-            onError={(event) => {
-              if (!event.currentTarget.src.endsWith('/assets/hospital-building.jpg')) {
-                event.currentTarget.src = '/assets/hospital-building.jpg'
-              }
-            }}
-            src={summary.hospital.logo_url || '/assets/hospital-building.jpg'}
-          />
+          {summary.hospital.logo_url ? (
+            <img
+              alt={t('Hospital logo')}
+              onError={(event) => {
+                event.currentTarget.hidden = true
+              }}
+              src={summary.hospital.logo_url}
+            />
+          ) : (
+            <span className="hospital-dashboard-logo-placeholder" aria-hidden="true">
+              <Icon name="building" size={18} />
+            </span>
+          )}
           <span>
             <strong>{summary.hospital.name}</strong>
             <small>{t('Hospital profile')}</small>
